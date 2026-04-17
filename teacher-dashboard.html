@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Positive Outcomes Teacher Dashboard</title>
+  <meta name="description" content="Teacher dashboard for viewing saved student voice profiles." />
+  <style>
+    :root{
+      --brand-teal:#1aa6a5;
+      --brand-navy:#143f7d;
+      --brand-gold:#d8b12b;
+      --bg:#eef4f7;
+      --card:#ffffff;
+      --text:#24364a;
+      --muted:#5f7286;
+      --border:#d8e2ea;
+      --soft-teal:#e7f8f7;
+      --danger:#d9534f;
+      --success:#2e9d68;
+    }
+
+    * { box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:linear-gradient(180deg,#f7fafc 0%, var(--bg) 100%);
+      color:var(--text);
+      padding:20px;
+    }
+
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+    }
+
+    .hero{
+      background:white;
+      border:1px solid rgba(20,63,125,0.08);
+      border-radius:24px;
+      box-shadow:0 20px 45px rgba(20,63,125,0.12);
+      padding:24px;
+      margin-bottom:18px;
+      display:grid;
+      grid-template-columns:140px 1fr;
+      gap:22px;
+      align-items:center;
+    }
+
+    .logo-box{
+      background:white;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:12px;
+      min-height:120px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .logo-box img{
+      max-width:100%;
+      height:auto;
+      display:block;
+      border-radius:10px;
+    }
+
+    .hero h1{
+      margin:0 0 10px;
+      color:var(--brand-navy);
+      font-size:clamp(1.9rem,4vw,2.7rem);
+    }
+
+    .hero p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.6;
+    }
+
+    .badge{
+      margin-top:12px;
+      display:inline-block;
+      padding:10px 16px;
+      border-radius:999px;
+      background:#fff8df;
+      border:1px solid rgba(216,177,43,0.45);
+      color:var(--brand-navy);
+      font-weight:700;
+    }
+
+    .panel{
+      background:white;
+      border:1px solid rgba(20,63,125,0.08);
+      border-radius:20px;
+      box-shadow:0 12px 28px rgba(20,63,125,0.08);
+      padding:18px;
+      margin-bottom:18px;
+    }
+
+    .panel h2{
+      margin:0 0 12px;
+      color:var(--brand-navy);
+      border-left:5px solid var(--brand-teal);
+      padding-left:10px;
+      font-size:1.15rem;
+    }
+
+    .toolbar{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+
+    .toolbar input{
+      width:100%;
+      min-height:46px;
+      border-radius:14px;
+      border:2px solid var(--border);
+      padding:12px 14px;
+      font-size:1rem;
+    }
+
+    .toolbar input:focus{
+      outline:none;
+      border-color:var(--brand-teal);
+      box-shadow:0 0 0 4px rgba(26,166,165,0.12);
+    }
+
+    .btn-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+
+    button{
+      border:none;
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:0.96rem;
+      font-weight:700;
+      cursor:pointer;
+      color:white;
+      transition:transform .12s ease, filter .2s ease;
+      box-shadow:0 8px 18px rgba(0,0,0,0.08);
+    }
+
+    button:hover{ filter:brightness(1.06); }
+    button:active{ transform:scale(0.98); }
+
+    .primary{ background:var(--brand-navy); }
+    .secondary{ background:var(--brand-teal); }
+    .warning{ background:var(--brand-gold); color:#24364a; }
+    .danger{ background:var(--danger); }
+
+    .stats{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+
+    .stat-card{
+      background:#fcfeff;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+    }
+
+    .stat-card .label{
+      color:var(--muted);
+      font-size:0.95rem;
+      margin-bottom:8px;
+    }
+
+    .stat-card .value{
+      color:var(--brand-navy);
+      font-size:1.8rem;
+      font-weight:800;
+    }
+
+    .list{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:14px;
+    }
+
+    .student-card{
+      background:#fcfeff;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+    }
+
+    .student-top{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+
+    .student-name{
+      margin:0;
+      color:var(--brand-navy);
+      font-size:1.15rem;
+    }
+
+    .student-meta{
+      color:var(--muted);
+      font-size:0.95rem;
+      line-height:1.6;
+      margin-top:6px;
+    }
+
+    .preview{
+      margin-top:12px;
+      color:var(--text);
+      line-height:1.6;
+      background:white;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      white-space:pre-wrap;
+    }
+
+    .reflection-grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .reflection-item{
+      background:#ffffff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .reflection-item strong{
+      color:var(--brand-navy);
+      display:block;
+      margin-bottom:6px;
+    }
+
+    .empty{
+      text-align:center;
+      padding:30px 16px;
+      color:var(--muted);
+      background:#fcfeff;
+      border:1px dashed var(--border);
+      border-radius:18px;
+    }
+
+    .footer{
+      text-align:center;
+      color:var(--muted);
+      font-size:0.94rem;
+      padding:8px;
+    }
+
+    @media (min-width:760px){
+      .toolbar{
+        grid-template-columns:1fr auto;
+        align-items:start;
+      }
+
+      .stats{
+        grid-template-columns:repeat(3,1fr);
+      }
+
+      .reflection-grid{
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    @media (max-width:740px){
+      .hero{
+        grid-template-columns:1fr;
+        text-align:center;
+      }
+
+      .logo-box{
+        max-width:220px;
+        margin:0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="logo-box">
+        <img src="logo.png" alt="Positive Outcomes Psychology Service logo">
+      </div>
+      <div>
+        <h1>Positive Outcomes Teacher Dashboard</h1>
+        <p>View saved student profiles, search by name, spot common support needs, and open individual reflections quickly.</p>
+        <div class="badge">Works with profiles saved in this browser on this device</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Search and Actions</h2>
+      <div class="toolbar">
+        <input type="text" id="searchBox" placeholder="Search by student name..." oninput="renderProfiles()">
+        <div class="btn-row">
+          <button class="primary" type="button" onclick="renderProfiles()">🔄 Refresh</button>
+          <button class="secondary" type="button" onclick="exportDashboardCSV()">⬇ Export CSV</button>
+          <button class="danger" type="button" onclick="clearAllProfiles()">🗑 Delete All Profiles</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Overview</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="label">Saved Profiles</div>
+          <div class="value" id="statProfiles">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Profiles With Reflection</div>
+          <div class="value" id="statReflections">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Saved Today</div>
+          <div class="value" id="statToday">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Student Profiles</h2>
+      <div id="profileList" class="list"></div>
+    </div>
+
+    <div class="footer">
+      © 2026 Positive Outcomes Psychology Service. Dashboard data is stored locally in this browser unless you later connect it to a shared database.
+    </div>
+  </div>
+
+  <script>
+    function getAllProfiles() {
+      const profiles = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('studentVoiceProfile_')) {
+          try {
+            const raw = localStorage.getItem(key);
+            const profile = JSON.parse(raw);
+            profile._storageKey = key;
+            profiles.push(profile);
+          } catch (e) {
+            console.warn('Skipping invalid profile:', key);
+          }
+        }
+      }
+      profiles.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
+      return profiles;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'No date';
+      const d = new Date(dateString);
+      if (isNaN(d)) return dateString;
+      return d.toLocaleString('en-GB');
+    }
+
+    function sameDay(dateA, dateB) {
+      return dateA.getFullYear() === dateB.getFullYear()
+        && dateA.getMonth() === dateB.getMonth()
+        && dateA.getDate() === dateB.getDate();
+    }
+
+    function updateStats(profiles) {
+      const today = new Date();
+      const reflectionCount = profiles.filter(p =>
+        (p.prompt1 && p.prompt1.trim()) ||
+        (p.prompt2 && p.prompt2.trim()) ||
+        (p.prompt3 && p.prompt3.trim()) ||
+        (p.prompt4 && p.prompt4.trim())
+      ).length;
+
+      const savedToday = profiles.filter(p => {
+        if (!p.savedAt) return false;
+        const d = new Date(p.savedAt);
+        return !isNaN(d) && sameDay(d, today);
+      }).length;
+
+      document.getElementById('statProfiles').textContent = profiles.length;
+      document.getElementById('statReflections').textContent = reflectionCount;
+      document.getElementById('statToday').textContent = savedToday;
+    }
+
+    function escapeHtml(text) {
+      return (text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderProfiles() {
+      const search = document.getElementById('searchBox').value.trim().toLowerCase();
+      const allProfiles = getAllProfiles();
+      updateStats(allProfiles);
+
+      const filtered = allProfiles.filter(profile =>
+        !search || (profile.studentName || '').toLowerCase().includes(search)
+      );
+
+      const list = document.getElementById('profileList');
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="empty">No saved profiles found in this browser${search ? ' for that search' : ''}.</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map((profile, index) => {
+        const preview = (profile.textInput || '').trim().slice(0, 280);
+        return `
+          <div class="student-card">
+            <div class="student-top">
+              <div>
+                <h3 class="student-name">${escapeHtml(profile.studentName || 'Unnamed student')}</h3>
+                <div class="student-meta">
+                  Lesson date: ${escapeHtml(profile.entryDate || 'Not entered')}<br>
+                  Saved: ${escapeHtml(formatDate(profile.savedAt))}
+                </div>
+              </div>
+              <div class="btn-row">
+                <button class="primary" type="button" onclick="toggleDetails('details-${index}')">👁 View</button>
+                <button class="warning" type="button" onclick="openInStudentView('${escapeHtml(profile._storageKey)}')">↩ Open in Student View</button>
+                <button class="danger" type="button" onclick="deleteProfile('${escapeHtml(profile._storageKey)}')">🗑 Delete</button>
+              </div>
+            </div>
+
+            <div class="preview">${escapeHtml(preview || 'No student voice text entered.')}${preview.length >= 280 ? '…' : ''}</div>
+
+            <div id="details-${index}" style="display:none;">
+              <div class="preview" style="margin-top:12px;">${escapeHtml(profile.textInput || 'No student voice text entered.')}</div>
+
+              <div class="reflection-grid">
+                <div class="reflection-item">
+                  <strong>What have I learned in this lesson?</strong>
+                  ${escapeHtml(profile.prompt1 || 'No response')}
+                </div>
+                <div class="reflection-item">
+                  <strong>What did I find easy?</strong>
+                  ${escapeHtml(profile.prompt2 || 'No response')}
+                </div>
+                <div class="reflection-item">
+                  <strong>What did I find hard?</strong>
+                  ${escapeHtml(profile.prompt3 || 'No response')}
+                </div>
+                <div class="reflection-item">
+                  <strong>What help do I need to do it better?</strong>
+                  ${escapeHtml(profile.prompt4 || 'No response')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleDetails(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function deleteProfile(key) {
+      if (!confirm('Delete this saved profile?')) return;
+      localStorage.removeItem(key);
+      renderProfiles();
+    }
+
+    function clearAllProfiles() {
+      if (!confirm('Delete all saved student profiles from this browser?')) return;
+      const keysToDelete = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('studentVoiceProfile_')) {
+          keysToDelete.push(key);
+        }
+      }
+      keysToDelete.forEach(key => localStorage.removeItem(key));
+      localStorage.removeItem('studentVoiceLastProfile');
+      renderProfiles();
+    }
+
+    function openInStudentView(key) {
+      localStorage.setItem('studentVoiceLastProfile', key);
+      window.location.href = 'index.html';
+    }
+
+    function exportDashboardCSV() {
+      const profiles = getAllProfiles();
+
+      if (!profiles.length) {
+        alert('There are no saved profiles to export.');
+        return;
+      }
+
+      const rows = [
+        [
+          'Student Name',
+          'Lesson Date',
+          'Saved At',
+          'Student Voice Text',
+          'What have I learned in this lesson?',
+          'What did I find easy?',
+          'What did I find hard?',
+          'What help do I need to do it better?'
+        ]
+      ];
+
+      profiles.forEach(p => {
+        rows.push([
+          p.studentName || '',
+          p.entryDate || '',
+          p.savedAt || '',
+          p.textInput || '',
+          p.prompt1 || '',
+          p.prompt2 || '',
+          p.prompt3 || '',
+          p.prompt4 || ''
+        ]);
+      });
+
+      const csv = rows.map(row =>
+        row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')
+      ).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'positive_outcomes_teacher_dashboard_export.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    renderProfiles();
+  </script>
+</body>
+</html>
