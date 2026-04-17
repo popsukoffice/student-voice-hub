@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Positive Outcomes Student Voice Hub</title>
   <meta name="description" content="A branded student voice tool for reading, listening, printing and sharing pupil voice." />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     :root{
@@ -449,7 +450,7 @@
         </div>
         <div class="title">
           <h1>Positive Outcomes Student Voice Hub</h1>
-          <p>See learning through the learner’s eyes. A calm space for reading, listening, printing and sharing pupil voice. Use this space to paste text, to read out loud and to record.</p>
+          <p>See learning through the learner’s eyes. A calm, branded space for reading, listening, printing and sharing pupil voice.</p>
           <div class="compliments">With compliments from Positive Outcomes Psychology Service</div>
         </div>
       </div>
@@ -493,16 +494,20 @@
           </div>
 
           <div class="controls">
-            <button class="play" onclick="speakText()">▶ Play</button>
-            <button class="stop" onclick="stopSpeech()">⏹ Stop</button>
-            <button class="copy" onclick="copyText()">📋 Copy</button>
-            <button class="email" onclick="sendEmail()">✉ Email</button>
-            <button class="clear" onclick="clearAllText()">🗑 Clear</button>
-            <button class="reader" onclick="toggleReaderView()">✨ Reader View</button>
-            <button class="print-btn" onclick="window.print()">🖨 Print to PDF</button>
+            <button class="play" type="button" onclick="speakText()">▶ Play</button>
+            <button class="stop" type="button" onclick="stopSpeech()">⏹ Stop</button>
+            <button class="copy" type="button" onclick="copyText()">📋 Copy</button>
+            <button class="email" type="button" onclick="sendEmail()">✉ Email</button>
+            <button class="clear" type="button" onclick="clearAllText()">🗑 Clear</button>
+            <button class="reader" type="button" onclick="toggleReaderView()">✨ Reader View</button>
+            <button class="print-btn" type="button" onclick="window.print()">🖨 Print to PDF</button>
+            <button class="print-btn" type="button" onclick="downloadPDF()">⬇ Download PDF Report</button>
+            <button class="copy" type="button" onclick="saveProfile()">💾 Save Profile</button>
+            <button class="email" type="button" onclick="loadProfile()">📂 Load Profile</button>
           </div>
 
           <div class="note">This version is designed to work reliably in Safari. For the best voice and boundary highlighting, Chrome or Edge may behave slightly better.</div>
+          <div class="note">Save Profile stores the student’s work in this browser on this device. Load Profile brings it back later.</div>
         </div>
 
         <div class="panel">
@@ -651,21 +656,27 @@
       synth.cancel();
     }
 
-    function getReflectionText() {
-      const p1 = document.getElementById('prompt1')?.value.trim() || '';
-      const p2 = document.getElementById('prompt2')?.value.trim() || '';
-      const p3 = document.getElementById('prompt3')?.value.trim() || '';
-      const p4 = document.getElementById('prompt4')?.value.trim() || '';
+    function getReflectionValues() {
+      return {
+        prompt1: document.getElementById('prompt1')?.value.trim() || '',
+        prompt2: document.getElementById('prompt2')?.value.trim() || '',
+        prompt3: document.getElementById('prompt3')?.value.trim() || '',
+        prompt4: document.getElementById('prompt4')?.value.trim() || ''
+      };
+    }
 
-      if (!p1 && !p2 && !p3 && !p4) return '';
+    function getReflectionText() {
+      const { prompt1, prompt2, prompt3, prompt4 } = getReflectionValues();
+
+      if (!prompt1 && !prompt2 && !prompt3 && !prompt4) return '';
 
       return `
 
 Lesson Reflection
-What have I learned in this lesson? ${p1}
-What did I find easy? ${p2}
-What did I find hard? ${p3}
-What help do I need to do it better? ${p4}`;
+What have I learned in this lesson? ${prompt1}
+What did I find easy? ${prompt2}
+What did I find hard? ${prompt3}
+What help do I need to do it better? ${prompt4}`;
     }
 
     async function copyText() {
@@ -721,6 +732,166 @@ What help do I need to do it better? ${p4}`;
 
       const btn = document.querySelector('.prompt-toggle-btn');
       btn.textContent = isHidden ? '🙈 Hide Reflection Questions' : '💬 Show Reflection Questions';
+    }
+
+    function getProfileKey() {
+      const name = studentName.value.trim();
+      if (!name) return null;
+      return `studentVoiceProfile_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    }
+
+    function saveProfile() {
+      const key = getProfileKey();
+
+      if (!key) {
+        alert('Please enter the student name before saving.');
+        return;
+      }
+
+      const profile = {
+        studentName: studentName.value,
+        entryDate: entryDate.value,
+        textInput: textInput.value,
+        prompt1: document.getElementById('prompt1')?.value || '',
+        prompt2: document.getElementById('prompt2')?.value || '',
+        prompt3: document.getElementById('prompt3')?.value || '',
+        prompt4: document.getElementById('prompt4')?.value || '',
+        promptSectionOpen: !document.getElementById('promptSection').classList.contains('hidden'),
+        savedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(key, JSON.stringify(profile));
+      localStorage.setItem('studentVoiceLastProfile', key);
+      alert(`Profile saved for ${studentName.value}.`);
+    }
+
+    function loadProfile() {
+      let key = getProfileKey();
+
+      if (!key) {
+        key = localStorage.getItem('studentVoiceLastProfile');
+        if (!key) {
+          alert('Enter a student name first, or save a profile before trying to load one.');
+          return;
+        }
+      }
+
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        alert('No saved profile was found for that student.');
+        return;
+      }
+
+      const profile = JSON.parse(raw);
+
+      studentName.value = profile.studentName || '';
+      entryDate.value = profile.entryDate || '';
+      textInput.value = profile.textInput || '';
+
+      const p1 = document.getElementById('prompt1');
+      const p2 = document.getElementById('prompt2');
+      const p3 = document.getElementById('prompt3');
+      const p4 = document.getElementById('prompt4');
+
+      if (p1) p1.value = profile.prompt1 || '';
+      if (p2) p2.value = profile.prompt2 || '';
+      if (p3) p3.value = profile.prompt3 || '';
+      if (p4) p4.value = profile.prompt4 || '';
+
+      const promptSection = document.getElementById('promptSection');
+      const promptButton = document.querySelector('.prompt-toggle-btn');
+
+      if (profile.promptSectionOpen) {
+        promptSection.classList.remove('hidden');
+        promptButton.textContent = '🙈 Hide Reflection Questions';
+      } else {
+        promptSection.classList.add('hidden');
+        promptButton.textContent = '💬 Show Reflection Questions';
+      }
+
+      displayArea.textContent = `Loaded saved profile for ${profile.studentName || 'student'}.`;
+      localStorage.setItem('studentVoiceLastProfile', key);
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const name = studentName.value.trim() || 'Not entered';
+      const date = entryDate.value || 'Not entered';
+      const mainText = textInput.value.trim() || 'No text entered';
+
+      const q1 = document.getElementById('prompt1')?.value.trim() || 'No response';
+      const q2 = document.getElementById('prompt2')?.value.trim() || 'No response';
+      const q3 = document.getElementById('prompt3')?.value.trim() || 'No response';
+      const q4 = document.getElementById('prompt4')?.value.trim() || 'No response';
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const left = 15;
+      let y = 20;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('Positive Outcomes Student Voice Report', left, y);
+
+      y += 10;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text('With compliments from Positive Outcomes Psychology Service', left, y);
+
+      y += 12;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Student: ${name}`, left, y);
+      y += 7;
+      doc.text(`Date: ${date}`, left, y);
+
+      y += 12;
+      doc.setFontSize(13);
+      doc.text('Student Voice Text', left, y);
+
+      y += 7;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      const mainLines = doc.splitTextToSize(mainText, pageWidth - 30);
+      doc.text(mainLines, left, y);
+      y += mainLines.length * 6 + 8;
+
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text('Lesson Reflection', left, y);
+      y += 8;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+
+      const reflections = [
+        `1. What have I learned in this lesson?\n${q1}`,
+        `2. What did I find easy?\n${q2}`,
+        `3. What did I find hard?\n${q3}`,
+        `4. What help do I need to do it better?\n${q4}`
+      ];
+
+      reflections.forEach((item) => {
+        const lines = doc.splitTextToSize(item, pageWidth - 30);
+        if (y + (lines.length * 6) > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(lines, left, y);
+        y += lines.length * 6 + 8;
+      });
+
+      doc.setFontSize(10);
+      doc.setTextColor(90);
+      doc.text('© 2026 Positive Outcomes Psychology Service. All rights reserved.', left, 285);
+
+      const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      doc.save(`student_voice_report_${safeName}.pdf`);
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
