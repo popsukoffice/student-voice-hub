@@ -295,8 +295,8 @@
       </div>
       <div>
         <h1>Positive Outcomes Teacher Dashboard</h1>
-        <p>View saved student profiles, search by name, spot common support needs, and open individual reflections quickly.</p>
-        <div class="badge">Works with profiles saved in this browser on this device</div>
+        <p>Import student profiles from OneDrive, search by name, spot common support needs, and review reflections.</p>
+        <div class="badge">Import JSON files from your shared OneDrive folder</div>
       </div>
     </div>
 
@@ -305,6 +305,7 @@
       <div class="toolbar">
         <input type="text" id="searchBox" placeholder="Search by student name..." oninput="renderProfiles()">
         <div class="btn-row">
+          <button class="primary" type="button" onclick="importProfiles()">📂 Import Profiles from OneDrive</button>
           <button class="primary" type="button" onclick="renderProfiles()">🔄 Refresh</button>
           <button class="secondary" type="button" onclick="exportDashboardCSV()">⬇ Export CSV</button>
           <button class="danger" type="button" onclick="clearAllProfiles()">🗑 Delete All Profiles</button>
@@ -336,7 +337,7 @@
     </div>
 
     <div class="footer">
-      © 2026 Positive Outcomes Psychology Service. Dashboard data is stored locally in this browser unless you later connect it to a shared database.
+      © 2026 Positive Outcomes Psychology Service. Import student JSON files from your shared OneDrive folder. Dashboard stores imported profiles in this browser.
     </div>
   </div>
 
@@ -358,6 +359,64 @@
       }
       profiles.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
       return profiles;
+    }
+
+    function importProfiles() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.multiple = true; // Allow selecting multiple files
+      
+      input.onchange = (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        let imported = 0;
+        let errors = 0;
+        
+        files.forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const profile = JSON.parse(event.target.result);
+              
+              // Generate storage key from student name
+              const name = profile.studentName || 'unnamed';
+              const key = `studentVoiceProfile_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+              
+              // Save to localStorage
+              localStorage.setItem(key, JSON.stringify(profile));
+              imported++;
+              
+              // If this was the last file, update display
+              if (index === files.length - 1) {
+                setTimeout(() => {
+                  renderProfiles();
+                  alert(`Successfully imported ${imported} profile(s).${errors > 0 ? `\n${errors} file(s) had errors.` : ''}`);
+                }, 100);
+              }
+            } catch (error) {
+              console.error('Error importing file:', file.name, error);
+              errors++;
+              
+              if (index === files.length - 1) {
+                setTimeout(() => {
+                  renderProfiles();
+                  if (imported > 0) {
+                    alert(`Imported ${imported} profile(s).\n${errors} file(s) had errors.`);
+                  } else {
+                    alert('No files could be imported. Please check that they are valid JSON files.');
+                  }
+                }, 100);
+              }
+            }
+          };
+          
+          reader.readAsText(file);
+        });
+      };
+      
+      input.click();
     }
 
     function formatDate(dateString) {
@@ -432,7 +491,6 @@
               </div>
               <div class="btn-row">
                 <button class="primary" type="button" onclick="toggleDetails('details-${index}')">👁 View</button>
-                <button class="warning" type="button" onclick="openInStudentView('${escapeHtml(profile._storageKey)}')">↩ Open in Student View</button>
                 <button class="danger" type="button" onclick="deleteProfile('${escapeHtml(profile._storageKey)}')">🗑 Delete</button>
               </div>
             </div>
@@ -489,11 +547,6 @@
       keysToDelete.forEach(key => localStorage.removeItem(key));
       localStorage.removeItem('studentVoiceLastProfile');
       renderProfiles();
-    }
-
-    function openInStudentView(key) {
-      localStorage.setItem('studentVoiceLastProfile', key);
-      window.location.href = 'index.html';
     }
 
     function exportDashboardCSV() {
