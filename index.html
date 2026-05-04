@@ -450,7 +450,7 @@
         </div>
         <div class="title">
           <h1>Positive Outcomes Student Voice Hub</h1>
-          <p>See learning through the learner’s eyes. A calm, branded space for reading, listening, printing and sharing pupil voice.</p>
+          <p>See learning through the learner's eyes. A calm, branded space for reading, listening, printing and sharing pupil voice.</p>
           <div class="compliments">With compliments from Positive Outcomes Psychology Service</div>
         </div>
       </div>
@@ -502,12 +502,12 @@
             <button class="reader" type="button" onclick="toggleReaderView()">✨ Reader View</button>
             <button class="print-btn" type="button" onclick="window.print()">🖨 Print to PDF</button>
             <button class="print-btn" type="button" onclick="downloadPDF()">⬇ Download PDF Report</button>
-            <button class="copy" type="button" onclick="saveProfile()">💾 Save Profile</button>
+            <button class="copy" type="button" onclick="saveProfile()">💾 Save to OneDrive</button>
             <button class="email" type="button" onclick="loadProfile()">📂 Load Profile</button>
           </div>
 
           <div class="note">This version is designed to work reliably in Safari. For the best voice and boundary highlighting, Chrome or Edge may behave slightly better.</div>
-          <div class="note">Save Profile stores the student’s work in this browser on this device. Load Profile brings it back later.</div>
+          <div class="note">💡 <strong>OneDrive Setup:</strong> Click "Save to OneDrive" to download a file. Then upload that file to your shared OneDrive folder so your teacher can see it.</div>
         </div>
 
         <div class="panel">
@@ -734,16 +734,10 @@ What help do I need to do it better? ${prompt4}`;
       btn.textContent = isHidden ? '🙈 Hide Reflection Questions' : '💬 Show Reflection Questions';
     }
 
-    function getProfileKey() {
-      const name = studentName.value.trim();
-      if (!name) return null;
-      return `studentVoiceProfile_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
-    }
-
     function saveProfile() {
-      const key = getProfileKey();
+      const name = studentName.value.trim();
 
-      if (!key) {
+      if (!name) {
         alert('Please enter the student name before saving.');
         return;
       }
@@ -760,57 +754,75 @@ What help do I need to do it better? ${prompt4}`;
         savedAt: new Date().toISOString()
       };
 
-      localStorage.setItem(key, JSON.stringify(profile));
-      localStorage.setItem('studentVoiceLastProfile', key);
-      alert(`Profile saved for ${studentName.value}.`);
+      // Create JSON file
+      const jsonString = JSON.stringify(profile, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      const safeName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `student_voice_${safeName}_${timestamp}.json`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert(`Profile saved as JSON file for ${name}.\n\n📤 NEXT STEP: Upload this file to your shared OneDrive folder so your teacher can view it.`);
     }
 
     function loadProfile() {
-      let key = getProfileKey();
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-      if (!key) {
-        key = localStorage.getItem('studentVoiceLastProfile');
-        if (!key) {
-          alert('Enter a student name first, or save a profile before trying to load one.');
-          return;
-        }
-      }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const profile = JSON.parse(event.target.result);
+            
+            studentName.value = profile.studentName || '';
+            entryDate.value = profile.entryDate || '';
+            textInput.value = profile.textInput || '';
 
-      const raw = localStorage.getItem(key);
-      if (!raw) {
-        alert('No saved profile was found for that student.');
-        return;
-      }
+            const p1 = document.getElementById('prompt1');
+            const p2 = document.getElementById('prompt2');
+            const p3 = document.getElementById('prompt3');
+            const p4 = document.getElementById('prompt4');
 
-      const profile = JSON.parse(raw);
+            if (p1) p1.value = profile.prompt1 || '';
+            if (p2) p2.value = profile.prompt2 || '';
+            if (p3) p3.value = profile.prompt3 || '';
+            if (p4) p4.value = profile.prompt4 || '';
 
-      studentName.value = profile.studentName || '';
-      entryDate.value = profile.entryDate || '';
-      textInput.value = profile.textInput || '';
+            const promptSection = document.getElementById('promptSection');
+            const promptButton = document.querySelector('.prompt-toggle-btn');
 
-      const p1 = document.getElementById('prompt1');
-      const p2 = document.getElementById('prompt2');
-      const p3 = document.getElementById('prompt3');
-      const p4 = document.getElementById('prompt4');
+            if (profile.promptSectionOpen) {
+              promptSection.classList.remove('hidden');
+              promptButton.textContent = '🙈 Hide Reflection Questions';
+            } else {
+              promptSection.classList.add('hidden');
+              promptButton.textContent = '💬 Show Reflection Questions';
+            }
 
-      if (p1) p1.value = profile.prompt1 || '';
-      if (p2) p2.value = profile.prompt2 || '';
-      if (p3) p3.value = profile.prompt3 || '';
-      if (p4) p4.value = profile.prompt4 || '';
-
-      const promptSection = document.getElementById('promptSection');
-      const promptButton = document.querySelector('.prompt-toggle-btn');
-
-      if (profile.promptSectionOpen) {
-        promptSection.classList.remove('hidden');
-        promptButton.textContent = '🙈 Hide Reflection Questions';
-      } else {
-        promptSection.classList.add('hidden');
-        promptButton.textContent = '💬 Show Reflection Questions';
-      }
-
-      displayArea.textContent = `Loaded saved profile for ${profile.studentName || 'student'}.`;
-      localStorage.setItem('studentVoiceLastProfile', key);
+            displayArea.textContent = `Loaded profile for ${profile.studentName || 'student'}.`;
+          } catch (error) {
+            alert('Error loading profile file. Please make sure it is a valid JSON file.');
+          }
+        };
+        
+        reader.readAsText(file);
+      };
+      
+      input.click();
     }
 
     function downloadPDF() {
